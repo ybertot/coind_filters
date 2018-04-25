@@ -1,10 +1,30 @@
 Require Export Omega.
-Require Export ZArithRing.
-Require Export ZArith.
-Require Export Zwf.
-Open Scope Z_scope.
-
+Require Export ArithRing.
+ 
 Ltac caseEq f := generalize (refl_equal f); pattern f at -1; case f.
+ 
+Theorem minus_S: forall x y, y <= x ->  S x - y = S (x - y).
+induction x.
+intros y; case y; simpl; auto.
+intros y' Hlt; omega.
+intros y; case y; auto.
+intros y' Hlt; simpl; rewrite <- IHx.
+case y'; simpl; auto.
+omega.
+Qed.
+ 
+Theorem minus_minus: forall x y, x <= y ->  y - (y - x) = x.
+induction x.
+intros y _; rewrite <- minus_n_O; auto with arith.
+intros y Hle; elim Hle.
+simpl; rewrite <- minus_n_n; auto.
+intros y' Hle' Heq; simpl (S y' - S x).
+rewrite minus_S.
+rewrite IHx.
+auto.
+omega.
+omega.
+Qed.
  
 Lemma simpl_int_prop:
  forall m x d n n', n' + (m + 1) <= x -> 0 < d -> x < n ->  ( x - d < x < n ).
@@ -12,153 +32,123 @@ intros; omega.
 Qed.
  
 Lemma simpl_int_prop2:
- forall p x m n, 0 <= n -> 1 < p < m -> ( n+(m+1) <= x  ) ->  ( 1 < p < x ).
+ forall p x m n, ( 1 < p < m ) -> ( n+(m+1) <= x  ) ->  ( 1 < p < x ).
 intros; omega.
 Qed.
  
 Lemma simpl_int_prop3:
- forall x n d , (x - d < n) -> (x - n < d).
+ forall x n d m n', n <= x -> ( n'+(m+1) <= x ) ->  (x - d < n) -> (x - n < d).
 intros; omega.
 Qed.
  
-Lemma simpl_int_prop4: forall x n,  0 <= n <= x -> (x - (x - n) <= x).
+Lemma simpl_int_prop4: forall x n,  (x - (x - n) <= x).
 intros; omega.
 Qed.
  
-Definition not_mult (n m : Z) : Prop := forall p,  (m <> p * n).
+Definition not_mult (n m : nat) : Prop := forall p,  (m <> p * n).
  
-Definition partial_prime (m n : Z) : Prop :=
+Definition partial_prime (m n : nat) : Prop :=
    forall p, ( 1 < p < m ) ->  not_mult p n.
  
-Definition pre_prime (n : Z) : Prop := partial_prime n n.
+Definition pre_prime (n : nat) : Prop := partial_prime n n.
  
-Theorem Zwf_m_1 : forall x, x > 0 -> Zwf 0 (x-1) x.
-intros; unfold Zwf; omega.
-Qed.
-
-Definition fact_F :=
-  fun x:Z =>
-  fun f:(forall y, Zwf 0 y x -> Z) =>
-  match Z_le_gt_dec x 0 with
-    left h => 1 
-  | right h' => x*(f (x - 1) (Zwf_m_1 x h'))
-  end.
-
-Definition fact := 
-  Fix (Zwf_well_founded 0) (fun _ => Z) fact_F.
+Fixpoint fact (n : nat) : nat :=
+ match n with 0 => 1 | S p => S p * fact p end.
  
-Definition fact_ex_F :=
-  fun x y:Z =>
-  fun f:forall z, Zwf 0 z y -> Z =>
-  match Z_le_gt_dec y 0 with
-    left h => 1
-  | right h' =>
-      match Z_eq_dec x y with
-        left heq => fact (y-1)
-      | right hn => y*f(y-1)(Zwf_m_1 y h')
-      end
-  end.
-
-Definition fact_ex (x:Z) :=
-  Fix (Zwf_well_founded 0) (fun _ => Z) (fact_ex_F x).
+Fixpoint fact_ex (m n : nat) {struct n} : nat :=
+ match n with
+   O => 1
+  | S p => if eq_nat_dec (S p) m then fact p else S p * fact_ex m p
+ end.
  
-Theorem fact_equation :
-  forall x, 
-  fact x = if Z_le_gt_dec x 0 then 1 else x*fact(x-1).
-intros x; unfold fact.
-rewrite Fix_eq; unfold fact_F.
-auto.
-intros x' f g heq; case (Z_le_gt_dec x' 0); auto.
-intros; rewrite heq;auto.
-Qed.
-
-Theorem fact_ex_equation :
-  forall x y,
-  fact_ex x y = 
-    if Z_le_gt_dec y 0 then 1 else
-      if Z_eq_dec x y then fact(y-1) else y*fact_ex x (y-1).
-intros x y; unfold fact_ex.
-rewrite Fix_eq; unfold fact_ex_F.
-auto.
-intros y' f g heq; case (Z_le_gt_dec y' 0); auto.
-intros; case (Z_eq_dec x y'); auto.
-intros; rewrite heq;auto.
-Qed.
-
 Theorem fact_ex_eq: forall m n, ( 1 < m <= n ) ->  fact n = m * fact_ex m n.
-induction n using (well_founded_ind (Zwf_well_founded 0)).
-rewrite fact_equation; rewrite fact_ex_equation; case (Z_le_gt_dec n 0).
+induction n.
 intros; omega.
-intros; case (Z_eq_dec m n).
+intros Hint; lazy zeta iota beta delta [fact fact_ex]; fold fact fact_ex.
+case (eq_nat_dec (S n) m).
 intros; subst m; auto.
-intros; rewrite H.
+intros; rewrite IHn.
 ring.
-unfold Zwf; omega.
 omega.
 Qed.
  
 Theorem le_1_fact: forall n,  (1 <= fact n).
-induction n using (well_founded_ind (Zwf_well_founded 0)).
-rewrite fact_equation.
-case (Z_le_gt_dec n 0).
-auto with zarith.
-intros.
-assert (H':1<= fact(n-1)).
-apply H.
-unfold Zwf; omega.
-pattern n at 1; replace n with ((n - 1) + 1).
-rewrite Zmult_plus_distr_l.
-cut (0 <= (n-1)*fact (n-1)).
-generalize ((n-1)*fact (n-1));intros; omega.
-apply Zmult_le_0_compat;omega.
-ring.
+induction n.
+auto with arith.
+simpl.
+generalize (n * fact n); intros; omega.
 Qed.
-
+ 
 Theorem le_fact: forall n,  (n <= fact n).
-induction n using (well_founded_ind (Zwf_well_founded 0)).
-rewrite fact_equation.
-case (Z_le_gt_dec n 0).
-intros; omega.
-intros; pattern n at 1; replace n with (n * 1).
-apply Zmult_le_compat_l.
+induction n.
+auto with arith.
+lazy zeta iota beta delta [fact]; fold fact.
+pattern (S n) at 1; replace (S n) with (S n * 1).
+apply mult_le_compat_l.
 apply le_1_fact.
-omega.
 ring.
 Qed.
-
-
-Definition mult_dec : forall m, m > 0 ->
-  forall n, {not_mult m n}+{~not_mult m n}.
-intros m H n.
-case (Z_eq_dec 0 (n mod m)).
-right.
-unfold not_mult.
-intros H'; apply (H' (n / m)).
-pattern n at 1; rewrite (Z_div_mod_eq n m).
-rewrite <- e;ring.
-auto.
-intros Hn;left; intros q H'.
-apply Hn; rewrite H'.
-apply sym_equal.
-apply Z_div_exact_1.
-auto.
-rewrite (Zmult_comm m).
-rewrite Z_div_mult;auto.
+ 
+Definition mult_dec_aux:
+ forall m n m', n < m' ->  ({ not_mult m n }) + ({ ~ not_mult m n }).
+intros m n m'; generalize m n; clear m n; elim m'.
+intros m n H; assert False.
+omega.
+elim H0.
+intros m'' f m n Hlt.
+elim (le_gt_dec m n).
+intros Hle.
+destruct m.
+destruct n.
+right; unfold not_mult.
+intros H; apply (H 1); ring.
+left; intros p.
+rewrite <- mult_n_O.
+discriminate.
+elim (f (S m) (minus n (S m))).
+unfold not_mult; intros Hn; left.
+intros p Heq; apply (Hn (p - 1)).
+rewrite Heq; rewrite mult_minus_distr_r.
+replace (1 * S m) with (S m); ring.
+intros Hm; right; intros Hn; apply Hm.
+intros p Heq.
+apply (Hn (p + 1)).
+rewrite (le_plus_minus (S m) n).
+rewrite Heq.
+ring.
+assumption.
+omega.
+destruct n.
+intros _; right; intros Hn; apply (Hn 0).
+ring.
+intros Hgt; left; intros p Heq.
+destruct p.
+simpl in Heq |-; discriminate Heq.
+simpl in Heq |-.
+rewrite Heq in Hgt.
+generalize Hgt; case (p * m).
+rewrite <- plus_n_O.
+exact (lt_irrefl m).
+intros; omega.
 Defined.
  
-Theorem pre_prime_multiple_diff :
- forall m n d x, 0<=d ->
+Definition mult_dec := fun m n => mult_dec_aux m n (S n) (le_n (S n)).
+ 
+Theorem pre_prime_multiple_diff:
+ forall m n d x,
  ( 1 < m < x ) -> n = x - d -> ~ not_mult m (x - d) -> pre_prime x ->  (0 < d).
- intros m n d x Hdpos Hint Heq Hm Hpr.
- elim (Zle_lt_or_eq 0 d);trivial.
- intros; subst d.
- elim Hm; ring (x-0); apply Hpr;auto.
+intros m n d x Hint Heq Hm Hpr.
+elim (le_lt_or_eq 0 d); trivial.
+intros; subst d.
+elim Hm; rewrite <- minus_n_O; apply Hpr.
+omega.
+auto with arith.
 Qed.
-
+ 
 Theorem partial_prime_step:
- forall m n, partial_prime m n -> not_mult m n ->  partial_prime (m+1) n.
+ forall m n, partial_prime m n -> not_mult m n ->  partial_prime (S m) n.
 intros m n Hppr Hnm p Hint.
-elim (Zle_lt_or_eq p m).
+elim (Lt.le_lt_or_eq p m).
 intros Hlt.
 apply Hppr.
 omega.
@@ -167,72 +157,52 @@ omega.
 Qed.
  
 Theorem partial_prime_rev:
- forall m n, partial_prime (m + 1) n ->  partial_prime m n.
+ forall m n, partial_prime (S m) n ->  partial_prime m n.
 intros n m Hppr p Hint; apply Hppr.
 omega.
 Qed.
  
 Theorem partial_prime_le:
- forall m m' n, 0 <= m <= m' -> partial_prime m' n ->  partial_prime m n.
-intros m m'; 
- elim m' using (well_founded_ind (Zwf_well_founded m)).
-clear m'.
-intros m' Hrec n Hle Hppr.
-elim (Zle_lt_or_eq m m'); auto.
-intros Hlt; apply (Hrec (m'-1)).
-unfold Zwf; omega.
-omega.
-apply partial_prime_rev.
-replace (m'-1+1) with m';auto;ring.
-intros; subst m'; auto.
-omega.
+ forall m m' n, m <= m' -> partial_prime m' n ->  partial_prime m n.
+intros m m' n Hle; elim Hle; clear Hle m'.
+trivial.
+intros m' Hle Hind Hppr; apply Hind; apply partial_prime_rev; auto.
 Qed.
  
 Theorem partial_prime_revstep:
- forall m n, 1 < m -> partial_prime (m+1) n ->  not_mult m n.
+ forall m n, 1 < m -> partial_prime (S m) n ->  not_mult m n.
 intros n m Hlt Hppr.
 apply Hppr.
 omega.
 Qed.
  
 Definition partial_prime_dec:
- forall n m,  0 <= m -> { partial_prime m n } + { ~ partial_prime m n }.
-intros n m; elim (Z_eq_dec 0 m).
+ forall n m,  ({ partial_prime m n }) + ({ ~ partial_prime m n }).
+intros n m; destruct m.
 left.
 unfold partial_prime.
-intros; assert (H':False).
+intros; assert False.
 omega.
-elim H'.
-elim (Z_eq_dec 1 m).
-left; unfold partial_prime; intros; assert (H':False).
+elim H0.
+destruct m.
+left; unfold partial_prime; intros; assert False.
 omega.
-elim H'.
-elim m using (well_founded_induction (Zwf_well_founded 0)).
-clear m.
-intros m Hrec H0 H1 H2;elim (Z_eq_dec 2 m); intros Hm2.
-left; unfold partial_prime; intros; assert (H':False).
+elim H0.
+induction m.
+left; unfold partial_prime; intros; assert False.
 omega.
-elim H'.
-elim (Hrec (m-1)).
-intros Hppr; elim (fun h => mult_dec (m-1) h n).
-intros Hnm; left.
-replace m with ((m-1)+1).
-apply partial_prime_step; trivial.
-ring.
+elim H0.
+elim IHm.
+intros Hppr; elim (mult_dec (S (S m)) n).
+intros Hnm; left; apply partial_prime_step; trivial.
 intros Hm; right; intros Hpr.
 elim Hm.
 apply Hpr; (try omega).
-omega.
 intros Hnpr; right; intros Hpr; elim Hnpr;
- apply partial_prime_le with m; auto with arith.
-omega.
-unfold Zwf; omega.
-omega.
-omega.
-omega.
+ apply partial_prime_le with (S (S (S m))); auto with arith.
 Defined.
  
-Definition pre_prime_dec (n : Z) : 0 <= n -> {pre_prime n}+{~ pre_prime n} :=
+Definition pre_prime_dec (n : nat) : ({ pre_prime n }) + ({ ~ pre_prime n }) :=
    partial_prime_dec n n.
  
 Theorem pre_prime2: pre_prime 2.
@@ -243,111 +213,91 @@ Definition find_divisor:
  forall n m,
  ( 1 < n < m ) ->
  ~ not_mult n m ->
- forall p, 0 <= p ->
- (forall k, ( p < k < m ) ->  (m <> n * k)) ->  ({z : Z | m = n * z}).
-intros n m Hlt Hm p;
-  elim p using (well_founded_induction (Zwf_well_founded 0)).
-clear p; intros p; case (Z_eq_dec p 0).
-intros Heqp _; subst p.
-intros _ Hn.
+ forall p,
+ (forall k, ( p < k < m ) ->  (m <> n * k)) ->  ({z : nat | m = n * z}).
+intros n m Hlt Hm p; elim p.
+intros Hn.
 elim Hm.
 intros k Hint.
-elim (Zle_or_lt k 0).
+elim (le_or_lt k 0).
 intros Hk0; assert (Hk0': k = 0).
-assert (m <= 0).
-subst m.
-replace 0 with (0 * n).
-apply Zmult_le_compat_r; auto.
-omega.
-ring.
 omega.
 subst k; omega.
 intros H0ltk.
-elim (Zle_or_lt m k).
+elim (le_or_lt m k).
 intros Hmk.
-assert (n <= 1).
-apply Zmult_lt_0_le_reg_r with k.
-auto.
-rewrite Zmult_comm; rewrite <- Hint.
+destruct n.
 omega.
+destruct n.
 omega.
+repeat rewrite <- mult_n_Sm in Hint.
+generalize Hint; generalize (k * n); intros; omega.
 intros Hkm.
 apply (Hn k).
 omega.
-rewrite Hint; ring_nat.
-intros Hpn0 Hind Hppos Hnfound.
-elim (Z_eq_dec m (n * p)).
-intros Heq; exists p; assumption.
-intros Hn; apply Hind with (p-1).
-unfold Zwf; omega.
-omega.
-intros k Hint; elim (Zle_lt_or_eq p k).
+rewrite Hint; ring.
+intros p' Hind Hnfound.
+elim (eq_nat_dec m (n * S p')).
+intros Heq; exists (S p'); assumption.
+intros Hn; apply Hind.
+intros k Hint; elim (le_lt_or_eq (S p') k).
 intros; apply Hnfound; omega.
 intros; subst k; assumption.
 omega.
 Qed.
  
 Theorem pre_prime_decompose:
- forall x, 0 <= x ->
+ forall x,
  ~ pre_prime x ->
   (exists y , pre_prime y /\ (( 1 < y < x ) /\ (exists z , x = y * z )) ).
-intros x; elim x  using (well_founded_ind (Zwf_well_founded 0)).
-clear x; intros x Hind1 Hxpos.
-cut (x <= x).
+intros x; elim x  using (well_founded_ind Wf_nat.lt_wf).
+clear x; intros x Hind1.
+generalize (le_n x).
 assert (forall p, ( x <= p < x ) ->  not_mult p x).
 intros; assert False.
 omega.
 elim H0.
-generalize Hxpos H; clear H.
- pattern x at 1 2 5; elim x using 
-   (well_founded_ind (Zwf_well_founded 0)).
-intros x' Hind2 Hx'pos.
-case (Z_eq_dec x' 0).
-intros Heqx'; subst x'.
+generalize H; clear H; pattern x at 1 4; elim x.
 intros H H0 H1.
 elim H1.
 intros p Hint.
 apply H.
 omega.
-intros Hx'n0 Hint Hle Hnpp.
-case (Z_eq_dec x' 1).
-intros Heqx1; subst x'.
-elim Hnpp; unfold pre_prime, partial_prime.
-intros; apply Hint;omega.
-intros Hx'n1.
-elim (fun h => mult_dec (x'-1) h x).
-intros Hn; apply Hind2 with (x'-1).
-unfold Zwf; omega.
-omega.
+intros y Hind p Hint Hle.
+elim (mult_dec y x).
+intros Hn; apply Hind.
 intros p' Hint'.
-elim (Zle_lt_or_eq (x'-1) p').
+elim (le_lt_or_eq y p').
 intros Hlt.
-apply Hint.
+apply p.
 omega.
 intros; subst p'; assumption.
 omega.
 omega.
 assumption.
 intros Hm.
-case (Z_eq_dec x' 2).
-intros Heqx'2.
-elim Hnpp.
-intros k Hint'; apply (Hint k).
+destruct y.
+elim Hm.
+unfold not_mult.
+intros k Heq.
+rewrite <- mult_n_O in Heq.
+subst x.
 omega.
-intros Hx'n2.
-elim (find_divisor (x'-1) x) with x.
+destruct y.
+elim Hle.
+intros k Hint'; apply (p k).
+omega.
+elim (find_divisor (S (S y)) x) with x.
 intros z Heq.
-elim (pre_prime_dec (x'-1)).
+elim (pre_prime_dec (S (S y))).
 intros Hpr.
-exists (x'-1).
+exists (S (S y)).
 split; auto.
 split.
-split.
 omega.
-intros;omega.
 exists z; assumption.
 intros Hnpr.
-elim (Hind1 (x'-1)).
+elim (Hind1 (S (S y))).
 intros p' [Hpr' [Hint' [z' Heq']]].
 exists p'.
 split.
@@ -355,47 +305,46 @@ assumption.
 split.
 omega.
 exists (z * z').
-rewrite Heq; rewrite Heq'; ring_nat.
-unfold Zwf; omega.
+rewrite Heq; rewrite Heq'; ring.
 omega.
 assumption.
 omega.
-omega.
 assumption.
-omega.
-intros;omega.
-omega.
-omega.
+intros; omega.
 Qed.
  
-Theorem plus_one_not_mult: forall p q r, 1 < p -> p*q+1<>p*r.
-intros p q r Hlt Heq.
-assert (H:p*(q-r)+1=0).
-replace 0 with (p*r-p*r).
-pattern (p*r) at 1; rewrite <- Heq;ring.
+Theorem plus_one_not_mult: forall p q r, 1 < p ->  (p * q + 1 <> p * r).
+intros p q; elim q.
+intros r; destruct r.
+intros; omega.
+replace (p * S r) with (p + p * r).
+generalize (p * r); intros; omega.
 ring.
-case (Z_eq_dec (q-r) 0).
-intros Heq'; rewrite Heq' in H; omega.
-intros Hne; case (Z_le_gt_dec (q - r) 0).
-intros Hle; assert (H0:p*(q-r) <= p*(-1)).
-apply Zmult_le_compat_l;try omega.
-omega.
-intros Hgt; assert (H0:p*1 <= p*(q-r)).
-apply Zmult_le_compat_l;try omega.
-omega.
+intros q' Hind r.
+destruct r.
+generalize (p * S q'); intros; omega.
+replace (p * S q' + 1) with (p + (p * q' + 1)).
+replace (p * S r) with (p + p * r).
+intros Hlt Heq.
+apply (Hind r).
+trivial.
+apply plus_reg_l with p.
+trivial.
+ring.
+ring.
 Qed.
  
-Theorem infinite_primes: forall n,  (exists m, n <= m /\ pre_prime m ).
+Theorem infinite_primes: forall n,  (exists m : nat , n <= m /\ pre_prime m ).
 intros n; elim (pre_prime_dec (fact n + 1)).
 intros H; exists (fact n + 1); split; trivial.
-apply Zle_trans with (fact n).
+apply le_trans with (fact n).
 apply le_fact.
-auto with zarith.
-intros Hnpr; elim pre_prime_decompose with (2:= Hnpr).
+auto with arith.
+intros Hnpr; elim (pre_prime_decompose _ Hnpr).
 intros p [Hpr [Hint [z Heq]]].
 exists p.
 split.
-elim (Zle_or_lt n p); auto.
+elim (le_or_lt n p); auto.
 intros Hlt.
 rewrite (fact_ex_eq p) in Heq.
 elim (plus_one_not_mult p (fact_ex p n) z).
@@ -403,8 +352,6 @@ omega.
 trivial.
 omega.
 assumption.
-generalize (le_1_fact n); intros;omega.
-generalize (le_1_fact n); intros;omega.
 Qed.
  
 Theorem partial_prime_next:
@@ -418,23 +365,20 @@ intros Hpr.
 assert (Hintp:  1 < p < m ).
 split.
 omega.
-elim (Zle_or_lt m p).
+elim (Lt.le_or_lt m p).
 intros Hle; elim (Hsm p); (trivial; (try omega)).
 trivial.
 elim Hppr with p y; auto.
 intros Hnpr.
-elim pre_prime_decompose with (2:= Hnpr).
-intros p' [Hpr' [Hintp' [z Heq']]].
+elim (pre_prime_decompose _ Hnpr); intros p' [Hpr' [Hintp' [z Heq']]].
 assert (Hint':  1 < p' < m ).
 split.
 omega.
-elim (Zle_or_lt m p').
+elim (Lt.le_or_lt m p').
 intros Hle; elim (Hsm p'); (trivial; (try omega)).
 trivial.
 elim Hppr with p' (y * z); auto.
 rewrite Heq.
 rewrite Heq'.
 ring.
-omega.
-omega.
 Qed.

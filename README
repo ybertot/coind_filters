@@ -1,12 +1,16 @@
+Files sieve.v filter.v and sieve_arith_complements.v have been edited from the initial revision
+to compile with coq-8.3pl1 and coq-8.4pl3
+
+Just these three files should be enough to see the contents of the paper 
+
 "Filters on coinductive streams, an application to Eratosthenes' sieve"
 
-These files are the proof files corresponding to that article.
+at work.
 
-Compile in the following order:
+To run them, compile them in the following order:
 
-coqc filter.v
-coqc sieve_arith_complements.v
-coqc sieve.v
+filter.v
+sieve_arith_complements.v
+sieve.v
 
-Normally, these files should be compatible with the version of Coq at the
-time the article was published (this information was not checked).
+This README file was created on June 16th, 2014
