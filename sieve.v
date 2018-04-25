@@ -17,7 +17,7 @@ Theorem partial_primes_to_F_infinite:
  1 < m ->
  forall k s, connected (step_partial_prime m) k s ->  F_infinite (not_mult m) s.
 intros m H1ltm.
-cofix.
+cofix partial_primes_to_F_infinite.
 intros k s; case s; intros n s' Hpprs; apply al_cons.
 2:apply (partial_primes_to_F_infinite n); inversion Hpprs; assumption.
 destruct (infinite_primes (n + (m + 1))) as [x [hle hpr]].
@@ -102,7 +102,7 @@ Theorem connect_partial_prime_next:
  (forall p, ( m <= p < m' ) ->  ~ pre_prime p) ->
  forall x s,
  connected (step_partial_prime m) x s ->  connected (step_partial_prime m') x s.
-intros m m' hltm hnpr; cofix.
+intros m m' hltm hnpr; cofix connect_partial_prime_next.
 intros x s Hc; inversion Hc.
 destruct H as [hlt [hn hp]].
 constructor.
@@ -119,7 +119,7 @@ CoFixpoint nums (n : nat): str nat :=
 Theorem pprs2:
  forall k, 2 <= k ->  connected (step_partial_prime 2) k (nums (k + 1)).
 Proof.
- cofix.
+ cofix pprs2.
  intros k; rewrite (st_dec_eq (nums (k + 1))).
  simpl.
  intros Hle; apply connected_cons.
@@ -196,7 +196,7 @@ Theorem sieve_primes:
  m < hd s ->
  (forall p, ( m < p < hd s ) ->  ~ pre_prime p) ->
  pre_prime (hd s) ->  connected step_prime m (sieve s Hs).
-cofix.
+cofix sieve_primes.
 intros [x s] [Hk H] m Hmk Hnp Hpr.
 rewrite (st_dec_eq (sieve (SCons x s) (conj Hk H))).
 simpl; fold sieve.

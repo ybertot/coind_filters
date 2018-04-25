@@ -1,0 +1,7 @@
+-R . Top
+-install none
+COQDOCFLAGS = "-s --charset utf-8 --parse-comments --with-header ../website/resources/header.html --with-footer ../website/resources/footer.html --index indexpage"
+filter.v
+sieve.v
+sieve_arith_complements.v
+
