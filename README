@@ -1,0 +1,12 @@
+"Filters on coinductive streams, an application to Eratosthenes' sieve"
+
+These files are the proof files corresponding to that article.
+
+Compile in the following order:
+
+coqc filter.v
+coqc sieve_arith_complements.v
+coqc sieve.v
+
+Normally, these files should be compatible with the version of Coq at the
+time the article was published (this information was not checked).
