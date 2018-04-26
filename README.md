@@ -12,9 +12,11 @@ there are an infinity of prime numbers.
 Files sieve.v filter.v and sieve_arith_complements.v have been edited from
 the initial revision to compile with coq-8.8.
 
-Just these three files should be enough to see the contents of the paper.
+Just these three files should be enough to see the contents of the paper
 
 "Filters on coinductive streams, an application to Eratosthenes' sieve"
+
+at work.
 
 To run the files, generate a makefile with the following command:
 
