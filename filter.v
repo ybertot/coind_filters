@@ -92,8 +92,8 @@ CoInductive always : str ->  Prop :=
   as_cons: forall x s', P x -> always s' ->  always (SCons x s') .
  
 Theorem filter_always:
- forall (s : str) (h : F_infinite s),  always (filter s h).
-cofix.
+  forall (s : str) (h : F_infinite s),  always (filter s h).
+cofix filter_always.
 intros s h; rewrite (st_dec_eq (filter s h)).
 simpl; case (filter_i s (always_eventually s h) h); intros [n hn] [s' hs'].
 apply as_cons.
@@ -145,7 +145,7 @@ Theorem filter_connected:
  (forall x y, P y -> R1 x y ->  R2 x y) ->
  forall s (h : F_infinite s) x, connected R1 x s ->  connected R2 x (filter s h).
 intros R1 R2 Rs Rt.
-cofix.
+cofix filter_connected.
 intros s Hf; case Hf; clear Hf s.
 intros y s hev hf x Hc;
  rewrite (st_dec_eq (filter (SCons y s) (al_cons y s hev hf))); simpl.
@@ -187,7 +187,7 @@ Theorem filter_keep:
  forall (P Q : A ->  Prop) (P_dec : forall x,  ({ P x }) + ({ ~ P x }))
         (s : str) (h : F_infinite P s),
  always Q s ->  always Q (filter P P_dec s h).
-intros P Q P_dec; cofix.
+intros P Q P_dec; cofix filter_keep.
 intros s h hq.
 rewrite (st_dec_eq (filter P P_dec s h)).
 simpl.
@@ -205,12 +205,12 @@ Qed.
 End filter_keep_sect.
 
 End str_def.
-Implicit Arguments SCons [A].
-Implicit Arguments hd [A].
-Implicit Arguments tl [A].
-Implicit Arguments connected [A].
-Implicit Arguments filter [A].
-Implicit Arguments F_infinite [A].
-Implicit Arguments st_dec_eq [A].
-Implicit Arguments always [A].
-Implicit Arguments eventually [A].
+Arguments SCons [A].
+Arguments hd [A].
+Arguments tl [A].
+Arguments connected [A].
+Arguments filter [A].
+Arguments F_infinite [A].
+Arguments st_dec_eq [A].
+Arguments always [A].
+Arguments eventually [A].

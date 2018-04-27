@@ -10,20 +10,20 @@ there are an infinity of prime numbers.
 
 
 Files sieve.v filter.v and sieve_arith_complements.v have been edited from
-the initial revision to compile with coq-8.3pl1 and coq-8.4pl3
-(as checked in June 2014).
+the initial revision to compile with coq-8.8.
 
-The same version still compiles with coq-8.8 (as checked in April 2018),
-but there are warnings concerning deprecated commands.
-
-Just these three files should be enough to see the contents of the paper 
+Just these three files should be enough to see the contents of the paper
 
 "Filters on coinductive streams, an application to Eratosthenes' sieve"
 
 at work.
 
-To run them, compile them in the following order:
+To run the files, generate a makefile with the following command:
 
-filter.v
-sieve_arith_complements.v
-sieve.v
+`coq_makefile -f _CoqProject -o Makefile`
+
+then make with:
+
+`make`
+
+
